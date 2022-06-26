@@ -77,9 +77,9 @@ server.post("/messages",  async (req, res) => {
 	const from = req.headers.user;
 	const message = {...req.body, from : from, time : dayjs().format('HH:mm:ss')}
 	const validation = messageSchema.validate(message, { abortEarly: true });
-	if (validation.error) {
+	const existingUser = await db.collection("users").findOne({ "name": req.headers.user } );
+	if (validation.error || existingUser === null) {
 		res.sendStatus(422)
-		console.log(validation)
 		return
 	}
 
@@ -97,7 +97,6 @@ server.post("/messages",  async (req, res) => {
 server.get("/messages",  async (req, res) => {
 	const user = req.headers.User;
 	const limit = parseInt(req.query.limit);
-	console.log(limit)
 	try {
 		const allMessages =  await db.collection("messages").find().toArray();
 		const showMessages = allMessages.splice(-{limit})
