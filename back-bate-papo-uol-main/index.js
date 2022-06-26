@@ -35,7 +35,6 @@ server.post("/participants", async (req, res) => {
 	const user = {...req.body, lastStatus: Date.now()}
 	const validation = userSchema.validate(user, { abortEarly: true });
 	if (validation.error) {
-		console.log(validation.error.details)
 		res.sendStatus(422)
 		return
 	}
@@ -95,11 +94,16 @@ server.post("/messages",  async (req, res) => {
 });
 
 server.get("/messages",  async (req, res) => {
-	const user = req.headers.User;
 	const limit = parseInt(req.query.limit);
 	try {
 		const allMessages =  await db.collection("messages").find().toArray();
-		const showMessages = allMessages.splice(-{limit})
+		const validMessages = allMessages.filter((message) => (message.from === req.headers.user || message.to === req.headers.user || message.to === "Todos"))
+		if (limit === NaN) {
+			showMessages = await validMessages
+			res.sendStatus(201)
+			return
+		}
+		const showMessages = await validMessages.splice(-{limit})
 		res.send(showMessages).status(201)
 		return
 	} catch (error){
