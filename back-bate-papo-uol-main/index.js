@@ -98,7 +98,7 @@ server.get("/messages",  async (req, res) => {
 	const limit = parseInt(req.query.limit);
 	try {
 		const allMessages =  await db.collection("messages").find().toArray();
-		const validMessages = allMessages.filter((message) => (message.from === req.headers.user || message.to === req.headers.user || message.to === "Todos"))
+		const validMessages = allMessages.filter((message) => (message.from === req.headers.user || message.to === req.headers.user || message.to === "Todos" || message.type === "message"))
 		if (limit === NaN) {
 			showMessages = await validMessages
 			res.sendStatus(201)
