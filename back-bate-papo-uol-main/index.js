@@ -32,7 +32,8 @@ mongoClient.connect().then(() => {
 });
 
 server.post("/participants", async (req, res) => {
-	const user = {...req.body, lastStatus: Date.now()}
+	const name = req.body.name.trim()
+	const user = {name , lastStatus: Date.now()}
 	const validation = userSchema.validate(user, { abortEarly: true });
 	if (validation.error) {
 		res.sendStatus(422)
@@ -114,8 +115,30 @@ server.get("/messages",  async (req, res) => {
 });
 
 server.post("/status",  async (req, res) => {
-	const name = req.headers.user;
+	const existingUser = await db.collection("users").findOne({ "name": req.headers.user } );
+	if (existingUser === null) {
+		res.sendStatus(404)
+		return
+	}
+	try {
+		await db.collection("users").updateOne({ 
+			"name" :  req.headers.user
+		}, {$set: {"lastStatus" : Date.now() }})	
+		res.sendStatus(200)
+		return
 
+	 } catch (error) {
+	  	res.status(500).send(error)
+	  	return
+	 }
 });
+
+setInterval( async () =>  { 
+	const now = Date.now() - 10000 
+	const removeUsers = await db.collection("users").find( { lastStatus: { $lt: now } } ).toArray()
+	if (removeUsers.length > 0) {
+	await db.collection("users").deleteMany( { lastStatus: { $lt: now } } )
+	await db.collection("messages").insertMany(removeUsers.map((user) => { return {"from": user.name, "to": 'Todos', "text": 'sai da sala...', "type": 'status', "time": dayjs().format('HH:mm:ss') } }))
+}}, 15000)
 
 server.listen(process.env.PORT)
